@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="AtendimentoService"
+  targetNamespace="http://example.com/atendimento/wsdl"
+  xmlns:tns="http://example.com/atendimento/wsdl"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+    <xsd:schema targetNamespace="http://example.com/atendimento/wsdl">
+
+      <xsd:complexType name="Solicitacao">
+        <xsd:sequence>
+          <xsd:element name="protocolo" type="xsd:int"/>
+          <xsd:element name="idUsuario" type="xsd:int"/>
+          <xsd:element name="nomeUsuario" type="xsd:string"/>
+          <xsd:element name="descricao" type="xsd:string"/>
+          <xsd:element name="categoria" type="xsd:string"/>
+          <xsd:element name="status" type="xsd:string"/>
+          <xsd:element name="dataCriacao" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:element name="registrarSolicitacaoRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="idUsuario" type="xsd:int"/>
+            <xsd:element name="nomeUsuario" type="xsd:string"/>
+            <xsd:element name="descricao" type="xsd:string"/>
+            <xsd:element name="categoria" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="registrarSolicitacaoResponse" type="tns:Solicitacao"/>
+
+      <xsd:element name="consultarStatusRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="protocolo" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="consultarStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="status" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="listarSolicitacoesPorUsuarioRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="idUsuario" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="listarSolicitacoesPorUsuarioResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="solicitacoes" type="tns:Solicitacao" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+    </xsd:schema>
+  </types>
+
+  <message name="registrarSolicitacaoRequest">
+    <part name="parameters" element="tns:registrarSolicitacaoRequest"/>
+  </message>
+
+  <message name="registrarSolicitacaoResponse">
+    <part name="parameters" element="tns:registrarSolicitacaoResponse"/>
+  </message>
+
+  <message name="consultarStatusRequest">
+    <part name="parameters" element="tns:consultarStatusRequest"/>
+  </message>
+
+  <message name="consultarStatusResponse">
+    <part name="parameters" element="tns:consultarStatusResponse"/>
+  </message>
+
+  <message name="listarSolicitacoesPorUsuarioRequest">
+    <part name="parameters" element="tns:listarSolicitacoesPorUsuarioRequest"/>
+  </message>
+
+  <message name="listarSolicitacoesPorUsuarioResponse">
+    <part name="parameters" element="tns:listarSolicitacoesPorUsuarioResponse"/>
+  </message>
+
+  <portType name="AtendimentoPortType">
+    <operation name="registrarSolicitacao">
+      <input message="tns:registrarSolicitacaoRequest"/>
+      <output message="tns:registrarSolicitacaoResponse"/>
+    </operation>
+
+    <operation name="consultarStatus">
+      <input message="tns:consultarStatusRequest"/>
+      <output message="tns:consultarStatusResponse"/>
+    </operation>
+
+    <operation name="listarSolicitacoesPorUsuario">
+      <input message="tns:listarSolicitacoesPorUsuarioRequest"/>
+      <output message="tns:listarSolicitacoesPorUsuarioResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="AtendimentoBinding" type="tns:AtendimentoPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+    <operation name="registrarSolicitacao">
+      <soap:operation soapAction="registrarSolicitacao"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+
+    <operation name="consultarStatus">
+      <soap:operation soapAction="consultarStatus"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+
+    <operation name="listarSolicitacoesPorUsuario">
+      <soap:operation soapAction="listarSolicitacoesPorUsuario"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <service name="AtendimentoService">
+    <port name="AtendimentoPort" binding="tns:AtendimentoBinding">
+      <soap:address location="http://localhost:8000/wsdl"/>
+    </port>
+  </service>
+</definitions>
