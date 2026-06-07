@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xsd:schema
+xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://example.com/atendimento/xsd"
+elementFormDefault="qualified">
+
+    <!-- SOLICITAÇÃO -->
+    <xsd:complexType name="Solicitacao">
+        <xsd:sequence>
+            <xsd:element name="protocolo" type="xsd:int"/>
+            <xsd:element name="idUsuario" type="xsd:int"/>
+            <xsd:element name="nomeUsuario" type="xsd:string"/>
+            <xsd:element name="descricao" type="xsd:string"/>
+            <xsd:element name="categoria" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="dataCriacao" type="xsd:string"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <!-- ✔ TOKEN -->
+    <xsd:element name="tokenResponse">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="token" type="xsd:string"/>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+
+    <!-- ✔ STATUS -->
+    <xsd:element name="statusResponse">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="status" type="xsd:string"/>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+
+    <!-- ✔ RESULTADO -->
+    <xsd:element name="resultadoResponse">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="resultado" type="xsd:string"/>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema>

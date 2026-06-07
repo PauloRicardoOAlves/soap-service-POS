@@ -10,7 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "soap": "^1.8.0"
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.21.0",
+    "soap": "^0.41.0",
+    "winston": "^3.19.0"
   }
 }

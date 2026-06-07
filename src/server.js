@@ -1,64 +1,164 @@
 const express = require('express');
 const soap = require('soap');
 const http = require('http');
+const dotenv = require('dotenv');
 const fs = require('fs');
+
+const pool = require('./database/db');
+const logger = require('./logger');
+const { gerarToken, validarToken } = require('./auth');
+
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-let solicitacoes = [];
-let contadorProtocolo = 1;
+function obterTokenSOAP(headers) {
+    return headers?.AuthHeader?.Token || null;
+}
 
 const service = {
-  AtendimentoService: {
-    AtendimentoPort: {
-      registrarSolicitacao(args) {
-        const novaSolicitacao = {
-          protocolo: contadorProtocolo++,
-          idUsuario: Number(args.idUsuario),
-          nomeUsuario: args.nomeUsuario,
-          descricao: args.descricao,
-          categoria: args.categoria,
-          status: 'ABERTA',
-          dataCriacao: new Date().toISOString()
-        };
+    AtendimentoService: {
+        AtendimentoPort: {
 
-        solicitacoes.push(novaSolicitacao);
-        return novaSolicitacao;
-      },
+            async gerarToken() {
+                const token = gerarToken();
+                logger.info('Token gerado');
+                return { token };
+            },
 
-      consultarStatus(args) {
-        const protocolo = Number(args.protocolo);
+            async registrarSolicitacao(args) {
 
-        const solicitacao = solicitacoes.find(s => s.protocolo === protocolo);
+                const data = args.parameters || args;
 
-        if (!solicitacao) {
-          return { status: 'SOLICITACAO_NAO_ENCONTRADA' };
+                const result = await pool.query(
+                    `INSERT INTO solicitacoes (id_usuario, nome_usuario, descricao, categoria)
+         VALUES ($1,$2,$3,$4) RETURNING *`,
+                    [
+                        Number(data.idUsuario),
+                        data.nomeUsuario,
+                        data.descricao,
+                        data.categoria
+                    ]
+                );
+
+                const s = result.rows[0];
+
+                console.log({
+                    protocolo: s.protocolo,
+                    idUsuario: s.id_usuario,
+                    nomeUsuario: s.nome_usuario,
+                    descricao: s.descricao,
+                    categoria: s.categoria,
+                    status: s.status,
+                    dataCriacao: s.data_criacao.toISOString()
+                })
+                
+                return {
+                    protocolo: s.protocolo,
+                    idUsuario: s.id_usuario,
+                    nomeUsuario: s.nome_usuario,
+                    descricao: s.descricao,
+                    categoria: s.categoria,
+                    status: s.status,
+                    dataCriacao: s.data_criacao.toISOString()
+                };
+            },
+
+            async consultarStatus(args) {
+                const result = await pool.query(
+                    'SELECT status FROM solicitacoes WHERE protocolo=$1',
+                    [Number(args.protocolo)]
+                );
+
+                return {
+                    status: result.rows[0]?.status || 'NAO_ENCONTRADO'
+                };
+            },
+
+            async listarSolicitacoesPorUsuario(args) {
+                const result = await pool.query(
+                    `SELECT * FROM solicitacoes WHERE id_usuario=$1 ORDER BY protocolo`,
+                    [Number(args.idUsuario)]
+                );
+
+                return {
+                    solicitacoes: result.rows.map(s => ({
+                        protocolo: s.protocolo,
+                        idUsuario: s.id_usuario,
+                        nomeUsuario: s.nome_usuario,
+                        descricao: s.descricao,
+                        categoria: s.categoria,
+                        status: s.status,
+                        dataCriacao: s.data_criacao.toISOString()
+                    }))
+                };
+            },
+
+            async atualizarStatus(args, _cb, headers) {
+                const token = obterTokenSOAP(headers);
+
+                if (!token) throw new Error('TOKEN_OBRIGATORIO');
+                validarToken(token);
+
+                const result = await pool.query(
+                    `UPDATE solicitacoes
+                     SET status=$1
+                     WHERE protocolo=$2
+                     RETURNING *`,
+                    [args.status, Number(args.protocolo)]
+                );
+
+                return {
+                    status: result.rows[0]?.status || 'NAO_ENCONTRADO'
+                };
+            },
+
+            async removerSolicitacao(args, _cb, headers) {
+                const token = obterTokenSOAP(headers);
+
+                if (!token) throw new Error('TOKEN_OBRIGATORIO');
+                validarToken(token);
+
+                const result = await pool.query(
+                    `DELETE FROM solicitacoes
+                     WHERE protocolo=$1
+                     RETURNING protocolo`,
+                    [Number(args.protocolo)]
+                );
+
+                return {
+                    resultado: result.rows.length
+                        ? 'REMOVIDA_COM_SUCESSO'
+                        : 'NAO_ENCONTRADA'
+                };
+            }
         }
-
-        return { status: solicitacao.status };
-      },
-
-      listarSolicitacoesPorUsuario(args) {
-        const idUsuario = Number(args.idUsuario);
-
-        const resultado = solicitacoes.filter(s => s.idUsuario === idUsuario);
-
-        return { solicitacoes: resultado };
-      }
     }
-  }
 };
+
+app.get('/', (req, res) => {
+    res.send('SOAP ativo');
+});
+
+app.get('/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ status: 'UP', database: 'OK' });
+    } catch {
+        res.status(500).json({ status: 'DOWN' });
+    }
+});
 
 const wsdlXml = fs.readFileSync('atendimento.wsdl', 'utf8');
 
-app.get('/', (req, res) => {
-  res.send('Servidor SOAP rodando. Acesse /wsdl?wsdl');
+soap.listen(server, {
+    path: '/wsdl',
+    services: service,
+    xml: wsdlXml
 });
 
-soap.listen(server, '/wsdl', service, wsdlXml);
-
-server.listen(8000, () => {
-  console.log('Servidor rodando em http://localhost:8000');
-  console.log('WSDL em http://localhost:8000/wsdl?wsdl');
+server.listen(process.env.PORT || 8000, () => {
+    console.log(`Servidor: http://localhost:${process.env.PORT || 8000}`);
+    console.log(`WSDL: http://localhost:${process.env.PORT || 8000}/wsdl?wsdl`);
 });
